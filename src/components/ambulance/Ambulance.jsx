@@ -19,8 +19,27 @@ export default function Ambulance() {
       )
     );
     setShowAmbulanceModal(false);
+
+    const message = `
+*Penugasan Ambulance Baru*
+
+Mohon segera menuju lokasi untuk penjemputan pasien.
+
+*Detail Pasien:*
+- *Nama:* ${order.patientName}
+- *Telepon:* ${order.phone}
+- *Alamat:* ${order.address}
+- *Kondisi:* ${order.condition}
+- *Waktu Laporan:* ${order.time}
+
+Terima kasih.
+`.trim();
+
+    const whatsappUrl = `https://wa.me/${ambulance.whatsapp}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
     alert(
-      `WhatsApp terkirim ke ${ambulance.driver} (${ambulance.plate})\n\nDetail Pasien:\n- Nama: ${order.patientName}\n- Telepon: ${order.phone}\n- Alamat: ${order.address}\n- Kondisi: ${order.condition}\n- Waktu: ${order.time}`
+      `Pesan penugasan telah dikirim ke WhatsApp driver ${ambulance.driver} (${ambulance.plate}).`
     );
   };
 
