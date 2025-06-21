@@ -1,11 +1,73 @@
+import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async () => {
+    setIsLoading(true);
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter both email and password");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Login
+      const response = await fetch("http://192.168.108.79:8000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.access_token) {
+        localStorage.setItem("token", data.access_token);
+
+        // 2. Ambil data user/role
+        const meRes = await fetch(
+          `http://192.168.108.79:8000/api/auth/me?token=${data.access_token}`,
+          { method: "POST" }
+        );
+        const meData = await meRes.json();
+
+        if (!meRes.ok || !meData.role) {
+          setError("Gagal mengambil data user.");
+          setIsLoading(false);
+          return;
+        }
+
+        // 3. Seleksi role
+        const role = meData.role;
+        if (role === "super_admin") {
+          navigate("/superadmin");
+        } else if (role === "admin_faskes") {
+          navigate("/");
+        } else if (role === "user_mobile") {
+          window.location.href = "https://play.google.com/store/apps/details?id=com.sadar.mobile";
+        } else {
+          setError("Role tidak dikenali.");
+        }
+      } else {
+        setError(data.message || "Login gagal. Cek email/password.");
+      }
+    } catch (err) {
+      setError("Network error. Silakan coba lagi.");
+      console.error("Login error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div
@@ -19,22 +81,8 @@ export default function Login() {
           className="absolute inset-0 w-full h-full object-cover z-0"
         />
 
-
-        {/* <div className="flex items-center space-x-2">
-            <div className="w-50 h-full relative">
-              <img
-                src="/assets/sadar.png"
-                alt="Triangle Logo"
-                className="w-full h-full"
-              />
-            </div>
-            <span className="text-white text-xl font-bold">SADAR</span>
-          </div> */}
-        
-
         <div className="absolute inset-0 flex flex-col justify-between p-8 z-10">
-
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
             <div className="w-50 h-full relative">
               <img
                 src="/assets/sadar.png"
@@ -42,10 +90,8 @@ export default function Login() {
                 className="w-full h-full"
               />
             </div>
-            {/* <span className="text-white text-xl font-bold">SADAR</span> */}
           </div>
           
-
           <div className="text-white hidden md:block">
             <h3 className="text-3xl font-bold mb-2">Welcome to</h3>
             <h1 className="text-7xl font-bold">SADAR</h1>
@@ -65,6 +111,13 @@ export default function Login() {
         </div>
 
         <div className="space-y-6">
+          {error && (
+            <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle size={16} className="text-red-500" />
+              <span className="text-red-700 text-sm">{error}</span>
+            </div>
+          )}
+
           <div>
             <label className="block text-black text-sm font-medium mb-2">
               Email
@@ -76,6 +129,8 @@ export default function Login() {
               placeholder="Enter your email"
               className="w-full px-4 py-3 bg-transparent border border-gray-600 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:border-red-500 transition-colors"
               style={{ borderColor: email ? "#E30030" : undefined }}
+              required
+              disabled={isLoading}
             />
           </div>
 
@@ -91,11 +146,14 @@ export default function Login() {
                 placeholder="Enter your password"
                 className="w-full px-4 py-3 bg-transparent border border-gray-600 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:border-red-500 transition-colors pr-12"
                 style={{ borderColor: password ? "#E30030" : undefined }}
+                required
+                disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -110,28 +168,34 @@ export default function Login() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 text-red-500 border-gray-600 rounded focus:ring-red-500 focus:ring-2 bg-transparent"
                 style={{ accentColor: "#E30030" }}
+                disabled={isLoading}
               />
               <span className="text-black text-sm">Remember me</span>
             </label>
-            <button className="text-black text-sm hover:text-red-500 transition-colors">
+            <button 
+              type="button"
+              className="text-black text-sm hover:text-red-500 transition-colors"
+              disabled={isLoading}
+            >
               Forgot Password
             </button>
           </div>
 
           <button
-            className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-95"
+            onClick={handleLogin}
+            className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             style={{ backgroundColor: "#E30030" }}
-            onClick={() => window.location.href = '/'}
+            disabled={isLoading}
           >
-            Log In
+            {isLoading ? (
+              <>
+                <Loader2 size={20} className="animate-spin mr-2" />
+                Logging in...
+              </>
+            ) : (
+              "Log In"
+            )}
           </button>
-
-          {/* <div className="text-center">
-            <span className="text-black">Don't have an account? </span>
-            <button className="text-red-500 hover:text-red-700 transition-colors" onClick={() => window.location.href = '/register'}>
-              Sign up
-            </button>
-          </div> */}
         </div>
 
         <div

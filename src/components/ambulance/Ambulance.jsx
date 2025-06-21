@@ -6,7 +6,6 @@ export default function Ambulance() {
   const [showAmbulanceModal, setShowAmbulanceModal] = useState(false);
   const [selectedAmbulanceOrder, setSelectedAmbulanceOrder] = useState(null);
 
-  // Gunakan dummyData
   const [ambulanceOrders, setAmbulanceOrders] = useState(dummyData.ambulanceOrders);
   const ambulances = dummyData.ambulance;
 
@@ -20,7 +19,6 @@ export default function Ambulance() {
       )
     );
     setShowAmbulanceModal(false);
-    // Simulate WhatsApp message
     alert(
       `WhatsApp terkirim ke ${ambulance.driver} (${ambulance.plate})\n\nDetail Pasien:\n- Nama: ${order.patientName}\n- Telepon: ${order.phone}\n- Alamat: ${order.address}\n- Kondisi: ${order.condition}\n- Waktu: ${order.time}`
     );

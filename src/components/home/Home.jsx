@@ -1,37 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Car,
-  Plus,
-  Shield,
-  BarChart3,
-  Activity,
-  ChevronRight,
-  AlertTriangle,
-  ParkingCircle,
-  Phone,
-  DollarSign,
-  Wind,
   Droplet,
+  Wind,
   Ambulance,
-  CheckCircle,
+  Phone,
   MapPin,
   Clock,
+  CheckCircle,
 } from "lucide-react";
 import { dummyData } from "../dummy/data";
 
 const HomeScreen = () => {
+  const navigate = useNavigate();
   const ambulanceCount = dummyData.ambulance.length;
   const darahCount = dummyData.kantongDarah.total;
   const oksigenCount = dummyData.tabungOksigen.total;
 
-  const navigate = useNavigate();
-  const [selectedStatistic, setSelectedStatistic] = useState("parking");
-  const [selectedPeriod, setSelectedPeriod] = useState("harian");
-  const [loading, setLoading] = useState(true);
+  const [ambulanceOrders, setAmbulanceOrders] = useState(dummyData.ambulanceOrders);
+  const [ambulances] = useState(dummyData.ambulance);
+
   const [showAmbulanceModal, setShowAmbulanceModal] = useState(false);
   const [selectedAmbulanceOrder, setSelectedAmbulanceOrder] = useState(null);
-  const [stats, setStats] = useState([
+
+  const stats = [
     {
       title: "Ambulance Terpanggil",
       value: ambulanceCount,
@@ -50,37 +43,7 @@ const HomeScreen = () => {
       icon: Wind,
       color: "from-green-500 to-green-600",
     },
-  ]);
-
-  const [ambulanceOrders, setAmbulanceOrders] = useState([
-    {
-      id: 1,
-      patientName: "Ahmad Rizki",
-      phone: "081234567890",
-      address: "Jl. Veteran No. 123, Makassar",
-      condition: "Darurat - Kecelakaan",
-      time: "10:30",
-      status: "pending",
-    },
-    {
-      id: 2,
-      patientName: "Siti Aminah",
-      phone: "081987654321",
-      address: "Jl. Sudirman No. 45, Makassar",
-      condition: "Rujukan - Penyakit Jantung",
-      time: "11:15",
-      status: "assigned",
-    },
-  ]);
-
-  const [ambulances] = useState([
-    { id: 1, plate: "DD 1234 AB", driver: "Pak Budi", status: "available" },
-    { id: 2, plate: "DD 5678 CD", driver: "Pak Andi", status: "busy" },
-    { id: 3, plate: "DD 9012 EF", driver: "Pak Joko", status: "available" },
-  ]);
-
-  const pendingOrders =
-    ambulanceOrders.filter((o) => o.status === "pending") || [];
+  ];
 
   const handleAssignAmbulance = (order, ambulanceId) => {
     const ambulance = ambulances.find((a) => a.id === ambulanceId);
@@ -92,20 +55,17 @@ const HomeScreen = () => {
       )
     );
     setShowAmbulanceModal(false);
-    // Simulate WhatsApp message
     alert(
       `WhatsApp terkirim ke ${ambulance.driver} (${ambulance.plate})\n\nDetail Pasien:\n- Nama: ${order.patientName}\n- Telepon: ${order.phone}\n- Alamat: ${order.address}\n- Kondisi: ${order.condition}\n- Waktu: ${order.time}`
     );
   };
 
+  const pendingAmbulanceOrders = ambulanceOrders.filter(
+    (order) => order.status === "pending"
+  );
+
   return (
     <div className="space-y-8">
-      {/* {loading && (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
-      )} */}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((stat, index) => (
           <div
@@ -135,6 +95,7 @@ const HomeScreen = () => {
           </div>
         ))}
       </div>
+
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center">
@@ -144,90 +105,54 @@ const HomeScreen = () => {
         </div>
 
         <div className="space-y-4">
-          {ambulanceOrders
-            .filter((o) => o.status === "pending")
-            .map((order) => (
-              <div
-                key={order.id}
-                className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">
-                      {order.patientName}
-                    </h3>
-                    <div className="flex items-center text-sm text-gray-600 mt-1">
-                      <Phone className="w-4 h-4 mr-1" />
-                      {order.phone}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 mt-1">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {order.address}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 mt-1">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {order.time}
-                    </div>
+          {pendingAmbulanceOrders.map((order) => (
+            <div
+              key={order.id}
+              className="border border-gray-200 rounded-xl p-4 transition-shadow"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-800">
+                    {order.patientName}
+                  </h3>
+                  <div className="flex items-center text-sm text-gray-600 mt-1">
+                    <Phone className="w-4 h-4 mr-1" />
+                    {order.phone}
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      order.status === "pending"
-                        ? "bg-[#80808A] text-[#FFFFFF]"
-                        : order.status === "assigned"
-                        ? "bg-[#E30030] text-[#FFFFFF]"
-                        : "bg-[#1F1F1F] text-[#FFFFFF]"
-                    }`}
-                  >
-                    {order.status === "pending"
-                      ? "Menunggu"
-                      : order.status === "assigned"
-                      ? "Ditugaskan"
-                      : "Selesai"}
-                  </span>
-                </div>
-
-                <div className="bg-red-50 p-3 rounded-lg mb-3">
-                  <p className="text-sm font-medium text-red-800">
-                    Kondisi: {order.condition}
-                  </p>
-                </div>
-
-                {order.status === "pending" && (
-                  <button
-                    onClick={() => {
-                      setSelectedAmbulanceOrder(order);
-                      setShowAmbulanceModal(true);
-                    }}
-                    className="w-full bg-[#E30030] hover:bg-opacity-90 text-white py-2 px-4 rounded-lg transition-colors"
-                  >
-                    Tugaskan Ambulance
-                  </button>
-                )}
-
-                {order.status === "assigned" && (
-                  <div className="space-y-2">
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        Ditugaskan ke:{" "}
-                        <span className="font-medium">
-                          {order.assignedAmbulance?.driver}
-                        </span>{" "}
-                        ({order.assignedAmbulance?.plate})
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleCompleteOrder(order.id)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Tandai Selesai
-                    </button>
+                  <div className="flex items-center text-sm text-gray-600 mt-1">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    {order.address}
                   </div>
-                )}
+                  <div className="flex items-center text-sm text-gray-600 mt-1">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {order.time}
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#80808A] text-white">
+                  Menunggu
+                </span>
               </div>
-            ))}
+
+              <div className="bg-red-50 p-3 rounded-lg mb-3">
+                <p className="text-sm font-medium text-red-800">
+                  Kondisi: {order.condition}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedAmbulanceOrder(order);
+                  setShowAmbulanceModal(true);
+                }}
+                className="w-full bg-[#E30030] text-white py-2 px-4 rounded-lg transition-colors hover:bg-[#b80025] focus:ring-2 focus:ring-red-400 focus:outline-none"
+              >
+                Tugaskan Ambulance
+              </button>
+            </div>
+          ))}
         </div>
       </div>
+
       {showAmbulanceModal && selectedAmbulanceOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
@@ -279,8 +204,6 @@ const HomeScreen = () => {
         </div>
       )}
     </div>
-
-    // </div>
   );
 };
 

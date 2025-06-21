@@ -6,45 +6,114 @@ export default function SuperAdmin() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [selectedType, setSelectedType] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [infoFaskes, setInfoFaskes] = useState({
+  const [form, setForm] = useState({
     nama: "",
+    jenis_layanan: "",
     alamat: "",
+    about: "",
     latitude: "",
     longitude: "",
-  });
-
-  const [akunFaskes, setAkunFaskes] = useState({
     email: "",
-    username: "",
+    name: "",
     password: "",
+    nomor_whatsapp: "",
   });
 
-  const handleInfoChange = (e) => {
-    setInfoFaskes({
-      ...infoFaskes,
+  const API_BASE = "http://192.168.108.79:8000/api";
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleAkunChange = (e) => {
-    setAkunFaskes({
-      ...akunFaskes,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleInfoSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Kirim data infoFaskes ke backend
-    alert("Faskes Informasi Tersimpan:\n" + JSON.stringify(infoFaskes, null, 2));
-    setInfoFaskes({ nama: "", alamat: "", latitude: "", longitude: "" });
-  };
+    setError("");
+    setLoading(true);
+    try {
+      // 1. POST FASKES
+      const resFaskes = await fetch(`${API_BASE}/faskes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          nama: form.nama,
+          jenis_layanan: form.jenis_layanan,
+          alamat: form.alamat,
+          about: form.about,
+          latitude: form.latitude,
+          longitude: form.longitude,
+        }),
+      });
+      const contentTypeFaskes = resFaskes.headers.get("content-type");
+      if (!resFaskes.ok) {
+        const errorText =
+          contentTypeFaskes && contentTypeFaskes.includes("application/json")
+            ? await resFaskes.json()
+            : await resFaskes.text();
+        throw new Error(
+          typeof errorText === "string"
+            ? errorText
+            : JSON.stringify(errorText)
+        );
+      }
+      const dataFaskes = await resFaskes.json();
+      console.log("Response faskes:", dataFaskes);
+      const faskesId = dataFaskes.data?.id;
+      console.log("Faskes ID:", faskesId);
+      if (!faskesId) throw new Error("ID faskes tidak ditemukan!");
 
-  const handleAkunSubmit = (e) => {
-    e.preventDefault();
-    alert("Akun Faskes Tersimpan:\n" + JSON.stringify(akunFaskes, null, 2));
-    setAkunFaskes({ email: "", username: "", password: "" });
+      // 2. POST AKUN
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("email", form.email);
+      formData.append("password", form.password);
+      formData.append("nomor_whatsapp", form.nomor_whatsapp);
+      formData.append("faskes_id", faskesId);
+      formData.append("role", "admin_faskes");
+
+      const resAkun = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        body: formData,
+      });
+      const contentTypeAkun = resAkun.headers.get("content-type");
+      let dataAkun;
+      if (contentTypeAkun && contentTypeAkun.includes("application/json")) {
+        dataAkun = await resAkun.json();
+      } else {
+        dataAkun = await resAkun.text();
+      }
+      if (!resAkun.ok) {
+        if (typeof dataAkun === "string" && dataAkun.includes("Duplicate entry")) {
+          throw new Error("Nomor WhatsApp sudah terdaftar.");
+        }
+        throw new Error(typeof dataAkun === "string" ? dataAkun : JSON.stringify(dataAkun));
+      }
+
+      alert("Faskes dan akun berhasil ditambahkan!");
+      setForm({
+        nama: "",
+        jenis_layanan: "",
+        alamat: "",
+        about: "",
+        latitude: "",
+        longitude: "",
+        email: "",
+        name: "",
+        password: "",
+        nomor_whatsapp: "",
+      });
+      setSelectedType("");
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
   };
 
   const handleSelectType = (type) => {
@@ -54,19 +123,18 @@ export default function SuperAdmin() {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-4xl">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#E30030] rounded-full mb-6">
-            <Activity className="w-10 h-10 text-[#FFFFFF]" />
-          </div>
           <h1 className="text-4xl font-bold text-[#1F1F1F] mb-4">SADAR</h1>
           <p className="text-[#80808A] text-xl mb-8">Sistem Akses Darurat</p>
           {error && <p className="text-[#E30030] mb-4">{error}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex gap-6 mb-10">
           <button
-            className={`bg-[#FFFFFF] rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-left border border-[#80808A]/10 ${selectedType === "rs" ? "ring-2 ring-[#E30030]" : ""}`}
+            className={`bg-[#FFFFFF] rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-left border border-[#80808A]/10 ${
+              selectedType === "rs" ? "ring-2 ring-[#E30030]" : ""
+            }`}
             onClick={() => handleSelectType("rs")}
             type="button"
           >
@@ -93,7 +161,9 @@ export default function SuperAdmin() {
           </button>
 
           <button
-            className={`bg-[#FFFFFF] rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-left border border-[#80808A]/10 ${selectedType === "puskesmas" ? "ring-2 ring-[#E30030]" : ""}`}
+            className={`bg-[#FFFFFF] rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-left border border-[#80808A]/10 ${
+              selectedType === "puskesmas" ? "ring-2 ring-[#E30030]" : ""
+            }`}
             onClick={() => handleSelectType("puskesmas")}
             type="button"
           >
@@ -119,7 +189,9 @@ export default function SuperAdmin() {
           </button>
 
           <button
-            className={`bg-[#FFFFFF] rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-left border border-[#80808A]/10 ${selectedType === "pmi" ? "ring-2 ring-[#E30030]" : ""}`}
+            className={`bg-[#FFFFFF] rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-left border border-[#80808A]/10 ${
+              selectedType === "pmi" ? "ring-2 ring-[#E30030]" : ""
+            }`}
             onClick={() => handleSelectType("pmi")}
             type="button"
           >
@@ -141,118 +213,133 @@ export default function SuperAdmin() {
         </div>
 
         {selectedType && (
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <form
-              onSubmit={handleInfoSubmit}
-              className="bg-white rounded-xl shadow-lg p-6 border border-[#80808A]/10"
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-xl shadow-lg p-6 border border-[#80808A]/10"
+          >
+            <h2 className="text-xl font-bold mb-4 text-[#1F1F1F]">
+              Tambah Faskes & Akun {selectedType === "rs" && "RS"}
+              {selectedType === "puskesmas" && "Puskesmas"}
+              {selectedType === "pmi" && "PMI"}
+            </h2>
+            {/* Faskes */}
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Nama Faskes</label>
+              <input
+                type="text"
+                name="nama"
+                value={form.nama}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Jenis Layanan</label>
+              <input
+                type="text"
+                name="jenis_layanan"
+                value={form.jenis_layanan}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Alamat</label>
+              <textarea
+                name="alamat"
+                value={form.alamat}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Tentang Faskes</label>
+              <input
+                type="text"
+                name="about"
+                value={form.about}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Latitude</label>
+              <input
+                type="text"
+                name="latitude"
+                value={form.latitude}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Longitude</label>
+              <input
+                type="text"
+                name="longitude"
+                value={form.longitude}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            {/* Akun */}
+            <div className="mb-3 mt-6">
+              <label className="block text-[#1F1F1F] mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Nama Admin</label>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-[#1F1F1F] mb-1">Nomor WhatsApp</label>
+              <input
+                type="text"
+                name="nomor_whatsapp"
+                value={form.nomor_whatsapp}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-[#E30030] text-white px-4 py-2 rounded hover:bg-[#b80024] transition"
+              disabled={loading}
             >
-              <h2 className="text-xl font-bold mb-4 text-[#1F1F1F]">
-                Tambah Faskes (Informasi) {selectedType === "rs" && "RS"}
-                {selectedType === "puskesmas" && "Puskesmas"}
-                {selectedType === "pmi" && "PMI"}
-              </h2>
-              <div className="mb-3">
-                <label className="block text-[#1F1F1F] mb-1">Nama Faskes</label>
-                <input
-                  type="text"
-                  name="nama"
-                  value={infoFaskes.nama}
-                  onChange={handleInfoChange}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="block text-[#1F1F1F] mb-1">Alamat</label>
-                <input
-                  type="text"
-                  name="alamat"
-                  value={infoFaskes.alamat}
-                  onChange={handleInfoChange}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="block text-[#1F1F1F] mb-1">Latitude</label>
-                <input
-                  type="text"
-                  name="latitude"
-                  value={infoFaskes.latitude}
-                  onChange={handleInfoChange}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="block text-[#1F1F1F] mb-1">Longitude</label>
-                <input
-                  type="text"
-                  name="longitude"
-                  value={infoFaskes.longitude}
-                  onChange={handleInfoChange}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-[#E30030] text-white px-4 py-2 rounded hover:bg-[#b80024] transition"
-              >
-                Simpan Informasi
-              </button>
-            </form>
-
-            <form
-              onSubmit={handleAkunSubmit}
-              className="bg-white rounded-xl shadow-lg p-6 border border-[#80808A]/10"
-            >
-              <h2 className="text-xl font-bold mb-4 text-[#1F1F1F]">
-                Tambah Akun Faskes {selectedType === "rs" && "RS"}
-                {selectedType === "puskesmas" && "Puskesmas"}
-                {selectedType === "pmi" && "PMI"}
-              </h2>
-              <div className="mb-3">
-                <label className="block text-[#1F1F1F] mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={akunFaskes.email}
-                  onChange={handleAkunChange}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="block text-[#1F1F1F] mb-1">Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={akunFaskes.username}
-                  onChange={handleAkunChange}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="block text-[#1F1F1F] mb-1">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={akunFaskes.password}
-                  onChange={handleAkunChange}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-[#E30030] text-white px-4 py-2 rounded hover:bg-[#b80024] transition"
-              >
-                Simpan Akun
-              </button>
-            </form>
-          </div>
+              {loading ? "Menyimpan..." : "Simpan Faskes & Akun"}
+            </button>
+          </form>
         )}
 
         <div className="text-center mt-12">

@@ -13,107 +13,100 @@ export default function KantongDarah() {
 
   return (
     <>
-      <div className="space y-6">
+      <div className="space-y-10">
         <div className="text-4xl font-bold mb-8">Manajemen Kantong Darah</div>
-        <div className="space-y-6">
-          <div className="bg-[#FFFFFF] rounded-xl shadow-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-4">
-                <div className="p-4 bg-[#E30030]/10 rounded-xl">
-                  <Droplets className="w-8 h-8 text-[#E30030]" />
-                </div>
-                <div>
-                  <p className="text-[#80808A]">Total Stok</p>
-                  <h3 className="text-3xl font-bold text-[#1F1F1F]">
-                    {darah.total}
-                  </h3>
-                  <p className="text-[#80808A] text-sm">Kantong</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="flex items-center justify-center space-x-2 bg-[#E30030] text-[#FFFFFF] p-4 rounded-xl hover:bg-opacity-90 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Tambah Stok</span>
-              </button>
-              <button
-                onClick={() => setShowRemoveModal(true)}
-                className="flex items-center justify-center space-x-2 bg-[#1F1F1F] text-[#FFFFFF] p-4 rounded-xl hover:bg-opacity-90 transition-colors"
-              >
-                <Minus className="w-5 h-5" />
-                <span>Ambil Stok</span>
-              </button>
+        <div className="bg-gradient-to-r from-[#E30030]/10 to-[#E30030]/5 rounded-2xl shadow-lg p-8 flex flex-col md:flex-row items-center justify-between gap-8 border border-[#E30030]/10">
+          <div className="flex items-center space-x-6">
+            <div className="p-6 bg-[#E30030]/20 rounded-2xl">
+              <Droplets className="w-12 h-12 text-[#E30030]" />
+            </div>
+            <div>
+              <p className="text-[#80808A] text-lg font-semibold">Total Stok</p>
+              <h3 className="text-5xl font-extrabold text-[#1F1F1F] tracking-tight">
+                {darah.total}
+              </h3>
+              <p className="text-[#80808A] text-base">Kantong</p>
             </div>
           </div>
+          <div className="flex flex-col gap-4 w-full md:w-auto">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center justify-center space-x-2 bg-[#E30030] text-[#FFFFFF] p-4 rounded-xl hover:bg-opacity-90 transition-colors font-semibold shadow"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Tambah Stok</span>
+            </button>
+            <button
+              onClick={() => setShowRemoveModal(true)}
+              className="flex items-center justify-center space-x-2 bg-[#1F1F1F] text-[#FFFFFF] p-4 rounded-xl hover:bg-opacity-90 transition-colors font-semibold shadow"
+            >
+              <Minus className="w-5 h-5" />
+              <span>Ambil Stok</span>
+            </button>
+          </div>
         </div>
-        <div className="space-y-6">
-          <div className="bg-[#FFFFFF] rounded-xl shadow-sm p-6 border border-[#80808A]/10 mb-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-[#1F1F1F] mb-4">
-                Log Kantong Darah
-              </h2>
-              <div className="bg-[#E30030]/10 px-4 py-2 rounded-lg mb-3">
-                <span className="text-[#E30030] font-medium">
-                  Stok: {darah.total} Kantong
+
+        <div className="bg-[#FFFFFF] rounded-2xl shadow-lg p-8 border border-[#80808A]/10">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h2 className="text-2xl font-bold text-[#1F1F1F]">
+              Log Kantong Darah
+            </h2>
+            <div className="bg-[#E30030]/10 px-6 py-2 rounded-lg">
+              <span className="text-[#E30030] font-semibold">
+                Stok: {darah.total} Kantong
+              </span>
+            </div>
+          </div>
+          <div className="divide-y divide-[#80808A]/10">
+            {darah.logs.map((log, idx) => (
+              <div key={idx} className="flex items-start justify-between py-6">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 rounded-lg bg-[#E30030]/10">
+                    {log.type === "in" ? (
+                      <Plus className="w-6 h-6 text-[#E30030]" />
+                    ) : (
+                      <Minus className="w-6 h-6 text-[#E30030]" />
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-[#1F1F1F]">
+                      {log.type === "in"
+                        ? "Penambahan Stok"
+                        : "Pengurangan Stok"}
+                    </h3>
+                    <p className="text-[#80808A] text-sm">
+                      {log.amount} kantong
+                    </p>
+                    <div className="flex items-center text-[#80808A] text-xs mt-1">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      <span>{log.date}</span>
+                    </div>
+                    <div className="flex items-center text-[#80808A] text-xs">
+                      <User className="w-4 h-4 mr-1" />
+                      <span>{log.person}</span>
+                    </div>
+                    {log.note && (
+                      <div className="flex items-center text-[#80808A] text-xs">
+                        <span>Catatan: {log.note}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <span
+                  className={`px-4 py-1 rounded-full text-xs font-bold ${
+                    log.type === "in"
+                      ? "bg-[#1F1F1F] text-[#FFFFFF]"
+                      : "bg-[#E30030] text-[#FFFFFF]"
+                  }`}
+                >
+                  {log.type === "in" ? "Masuk" : "Keluar"}
                 </span>
               </div>
-            </div>
-            <div className="space-y-4">
-              {darah.logs.map((log, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start justify-between border-b border-[#80808A]/10 pb-4 mb-4 last:border-b-0 last:mb-0"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 rounded-lg bg-[#E30030]/10">
-                      {log.type === "in" ? (
-                        <Plus className="w-6 h-6 text-[#E30030]" />
-                      ) : (
-                        <Minus className="w-6 h-6 text-[#E30030]" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-[#1F1F1F]">
-                        {log.type === "in"
-                          ? "Penambahan Stok"
-                          : "Pengurangan Stok"}
-                      </h3>
-                      <p className="text-[#80808A] text-sm">
-                        {log.amount} kantong
-                      </p>
-                      <div className="flex items-center text-[#80808A] text-xs mt-1">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        <span>{log.date}</span>
-                      </div>
-                      <div className="flex items-center text-[#80808A] text-xs">
-                        <User className="w-4 h-4 mr-1" />
-                        <span>{log.person}</span>
-                      </div>
-                      {log.note && (
-                        <div className="flex items-center text-[#80808A] text-xs">
-                          <span>Catatan: {log.note}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      log.type === "in"
-                        ? "bg-[#1F1F1F] text-[#FFFFFF]"
-                        : "bg-[#E30030] text-[#FFFFFF]"
-                    }`}
-                  >
-                    {log.type === "in" ? "Masuk" : "Keluar"}
-                  </span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
+
         {showAddModal && (
           <div className="fixed inset-0 bg-[#1F1F1F]/50 flex items-center justify-center z-50 p-4">
             <div className="bg-[#FFFFFF] rounded-xl p-6 w-full max-w-md">
@@ -172,9 +165,7 @@ export default function KantongDarah() {
               </div>
 
               <div className="flex space-x-3 mt-6">
-                <button
-                  className="flex-1 bg-[#E30030] text-[#FFFFFF] py-2 rounded-lg hover:bg-opacity-90 transition-colors"
-                >
+                <button className="flex-1 bg-[#E30030] text-[#FFFFFF] py-2 rounded-lg hover:bg-opacity-90 transition-colors">
                   Tambah Stok
                 </button>
                 <button

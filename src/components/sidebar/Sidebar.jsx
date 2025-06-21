@@ -29,11 +29,16 @@ const Sidebar = ({ activeTab }) => {
       icon: Wind,
       path: "/tabung-oksigen",
     },
+    {
+      id: "profile",
+      label: "Profile",
+      icon: Users,
+      path: "/profile",
+    },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAdminLoggedIn");
-    localStorage.removeItem("loginExpiredAt");
+  const handleLogout = async () => {
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -54,20 +59,41 @@ const Sidebar = ({ activeTab }) => {
         </div>
 
         <nav className="space-y-2">
-          {menuItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.path}
-              className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 ${
-                activeTab === item.id
-                  ? "bg-red-600 from-blue-600 to-purple-600 text-white shadow-lg"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <item.icon className="w-5 h-5 mr-3" />
-              {item.label}
-            </Link>
-          ))}
+          {menuItems
+            .filter((item) => item.id !== "profile")
+            .map((item) => (
+              <Link
+                key={item.id}
+                to={item.path}
+                className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 ${
+                  activeTab === item.id
+                    ? "bg-red-600 from-blue-600 to-purple-600 text-white shadow-lg"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <item.icon className="w-5 h-5 mr-3" />
+                {item.label}
+              </Link>
+            ))}
+
+          <div className="my-4 border-t border-gray-200" />
+
+          {menuItems
+            .filter((item) => item.id === "profile")
+            .map((item) => (
+              <Link
+                key={item.id}
+                to={item.path}
+                className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 ${
+                  activeTab === item.id
+                    ? "bg-red-600 from-blue-600 to-purple-600 text-white shadow-lg"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <item.icon className="w-5 h-5 mr-3" />
+                {item.label}
+              </Link>
+            ))}
         </nav>
       </div>
 
