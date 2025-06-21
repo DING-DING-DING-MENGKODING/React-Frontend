@@ -258,7 +258,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Data Akun */}
       <div>
         <div className="flex items-center gap-6 mb-6">
           <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-red-600 shadow">

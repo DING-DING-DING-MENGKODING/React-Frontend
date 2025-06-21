@@ -22,7 +22,6 @@ export default function Login() {
     }
 
     try {
-      // 1. Login
       const response = await fetch("http://192.168.108.79:8000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,8 +32,6 @@ export default function Login() {
 
       if (response.ok && data.access_token) {
         localStorage.setItem("token", data.access_token);
-
-        // 2. Ambil data user/role
         const meRes = await fetch(
           `http://192.168.108.79:8000/api/auth/me?token=${data.access_token}`,
           { method: "POST" }
@@ -47,7 +44,6 @@ export default function Login() {
           return;
         }
 
-        // 3. Seleksi role
         const role = meData.role;
         if (role === "super_admin") {
           navigate("/superadmin");

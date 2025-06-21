@@ -35,7 +35,8 @@ export default function SuperAdmin() {
     setError("");
     setLoading(true);
     try {
-      // 1. POST FASKES
+      // ada 2 post dsni
+      // ada post faskes dsni
       const resFaskes = await fetch(`${API_BASE}/faskes`, {
         method: "POST",
         headers: {
@@ -69,7 +70,7 @@ export default function SuperAdmin() {
       console.log("Faskes ID:", faskesId);
       if (!faskesId) throw new Error("ID faskes tidak ditemukan!");
 
-      // 2. POST AKUN
+      // ada post akun dsni
       const formData = new FormData();
       formData.append("name", form.name);
       formData.append("email", form.email);
@@ -222,7 +223,6 @@ export default function SuperAdmin() {
               {selectedType === "puskesmas" && "Puskesmas"}
               {selectedType === "pmi" && "PMI"}
             </h2>
-            {/* Faskes */}
             <div className="mb-3">
               <label className="block text-[#1F1F1F] mb-1">Nama Faskes</label>
               <input
@@ -287,7 +287,6 @@ export default function SuperAdmin() {
                 required
               />
             </div>
-            {/* Akun */}
             <div className="mb-3 mt-6">
               <label className="block text-[#1F1F1F] mb-1">Email</label>
               <input
