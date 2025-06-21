@@ -44,7 +44,6 @@ const HomeScreen = () => {
       setStockData({ darah: darahTotal, oksigen: oksigenTotal });
     } catch (error) {
       console.error("Gagal mengambil data stok:", error);
-      // Fallback ke data dummy jika API gagal
       setStockData({ darah: dummyData.kantongDarah.total, oksigen: dummyData.tabungOksigen.total });
     } finally {
       setLoading(false);

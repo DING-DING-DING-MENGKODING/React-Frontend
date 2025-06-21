@@ -111,7 +111,6 @@ export default function Profile() {
       Object.keys(formAkun).forEach((key) => {
         formData.append(key, formAkun[key]);
       });
-      // Jika ada field password kosong, hapus dari data yang dikirim
       if (!formAkun.password) {
         formData.delete("password");
       }
@@ -119,7 +118,7 @@ export default function Profile() {
       const res = await fetch(
         `https://sadar-be.simogas.online/api/auth/update`,
         {
-          method: "POST", // Menggunakan POST untuk mengakomodasi file upload
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -8,14 +8,13 @@ export default function TabungOksigen() {
   const [note, setNote] = useState("");
   const [personName, setPersonName] = useState("");
   
-  // State untuk form pengambilan yang lebih lengkap
   const [withdrawalForm, setWithdrawalForm] = useState({
     patientName: "",
     patientId: "",
     doctorName: "",
     department: "",
     diagnosis: "",
-    urgency: "normal", // normal, urgent, emergency
+    urgency: "normal", 
     prescriptionNumber: "",
     phoneNumber: "",
     address: "",
@@ -80,13 +79,11 @@ export default function TabungOksigen() {
 
   const handleTransaction = async (type) => {
     if (type === 'in') {
-      // Untuk penambahan stok
       if (!amount || !personName) {
         alert("Jumlah dan nama petugas harus diisi.");
         return;
       }
     } else {
-      // Untuk pengambilan stok
       if (!withdrawalForm.patientName || !withdrawalForm.doctorName || !withdrawalForm.department) {
         alert("Nama pasien, dokter, dan departemen harus diisi.");
         return;
@@ -104,7 +101,7 @@ export default function TabungOksigen() {
       } : {
         item: "oksigen",
         type: type,
-        amount: 1, // Otomatis 1 tabung
+        amount: 1,
         note: `Pengambilan untuk pasien: ${withdrawalForm.patientName} (${withdrawalForm.patientId}) - Dr. ${withdrawalForm.doctorName} - ${withdrawalForm.department} - ${withdrawalForm.diagnosis} - ${withdrawalForm.urgency} - ${withdrawalForm.prescriptionNumber} - ${withdrawalForm.phoneNumber} - ${withdrawalForm.address}${withdrawalForm.note ? ' - Catatan: ' + withdrawalForm.note : ''}`,
         person: withdrawalForm.doctorName,
         withdrawal_data: withdrawalForm

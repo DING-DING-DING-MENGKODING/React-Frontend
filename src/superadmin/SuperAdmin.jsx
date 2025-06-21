@@ -35,7 +35,6 @@ export default function SuperAdmin() {
     setError("");
     setLoading(true);
     
-    // Validasi data sebelum dikirim
     if (!form.nama || !form.jenis_layanan || !form.alamat || !form.latitude || !form.longitude) {
       setError("Semua field faskes harus diisi!");
       setLoading(false);
@@ -48,7 +47,6 @@ export default function SuperAdmin() {
       return;
     }
     
-    // Validasi format nomor WhatsApp
     const whatsappRegex = /^(\+62|62|0)8[1-9][0-9]{6,12}$/;
     console.log("Validasi nomor WhatsApp:", form.nomor_whatsapp, "Result:", whatsappRegex.test(form.nomor_whatsapp));
     if (!whatsappRegex.test(form.nomor_whatsapp)) {
@@ -57,7 +55,6 @@ export default function SuperAdmin() {
       return;
     }
     
-    // Validasi password minimal 6 karakter
     if (form.password.length < 6) {
       setError("Password minimal 6 karakter!");
       setLoading(false);
@@ -114,7 +111,6 @@ export default function SuperAdmin() {
       console.log("Faskes ID:", faskesId);
       if (!faskesId) throw new Error("ID faskes tidak ditemukan!");
 
-      // Pastikan faskes_id adalah number
       const faskesIdNumber = parseInt(faskesId);
       if (isNaN(faskesIdNumber)) {
         throw new Error("ID faskes tidak valid!");
@@ -138,19 +134,16 @@ export default function SuperAdmin() {
         role: "admin_faskes"
       });
 
-      // Log FormData contents
       console.log("FormData contents:");
       for (let [key, value] of formData.entries()) {
         console.log(`${key}: ${value}`);
       }
 
-      // Coba dengan FormData terlebih dahulu
       let resAkun = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         body: formData,
       });
       
-      // Jika gagal, coba dengan JSON format
       if (!resAkun.ok) {
         console.log("FormData gagal, mencoba dengan JSON format...");
         resAkun = await fetch(`${API_BASE}/auth/register`, {
@@ -188,7 +181,6 @@ export default function SuperAdmin() {
         console.log("Error response akun - Headers:", Object.fromEntries(resAkun.headers.entries()));
         console.log("Error response akun - Data:", dataAkun);
         
-        // Check for unique constraint violation from Laravel
         if (dataAkun && typeof dataAkun.message === 'string' && dataAkun.message.includes('SQLSTATE[23000]')) {
              throw new Error("Email atau Nomor WhatsApp sudah terdaftar. Silakan gunakan yang lain.");
         }
@@ -199,7 +191,6 @@ export default function SuperAdmin() {
         throw new Error(`Error ${resAkun.status}: ${typeof dataAkun === "string" ? dataAkun : JSON.stringify(dataAkun)}`);
       }
 
-      // Pastikan response menunjukkan success
       if (dataAkun && dataAkun.success === false) {
         console.log("Response menunjukkan success: false");
         throw new Error(dataAkun.message || "Gagal mendaftarkan akun");

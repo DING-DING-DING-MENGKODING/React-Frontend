@@ -9,14 +9,13 @@ export default function KantongDarah() {
   const [personName, setPersonName] = useState("");
   const [selectedBloodType, setSelectedBloodType] = useState("");
   
-  // State untuk form pengambilan yang lebih lengkap
   const [withdrawalForm, setWithdrawalForm] = useState({
     patientName: "",
     patientId: "",
     doctorName: "",
     department: "",
     diagnosis: "",
-    urgency: "normal", // normal, urgent, emergency
+    urgency: "normal",
     prescriptionNumber: "",
     phoneNumber: "",
     address: "",
@@ -82,13 +81,11 @@ export default function KantongDarah() {
 
   const handleTransaction = async (type) => {
     if (type === 'in') {
-      // Untuk penambahan stok
       if (!amount || !personName || !selectedBloodType) {
         alert("Jenis darah, jumlah, dan nama petugas harus diisi.");
         return;
       }
     } else {
-      // Untuk pengambilan stok
       if (!withdrawalForm.patientName || !withdrawalForm.doctorName || !withdrawalForm.department || !selectedBloodType) {
         alert("Nama pasien, dokter, departemen, dan jenis darah harus diisi.");
         return;
@@ -108,7 +105,7 @@ export default function KantongDarah() {
         item: "darah",
         jenis: selectedBloodType,
         type: type,
-        amount: 1, // Otomatis 1 kantong
+        amount: 1,
         note: `Pengambilan untuk pasien: ${withdrawalForm.patientName} (${withdrawalForm.patientId}) - Dr. ${withdrawalForm.doctorName} - ${withdrawalForm.department} - ${withdrawalForm.diagnosis} - ${withdrawalForm.urgency} - ${withdrawalForm.prescriptionNumber} - ${withdrawalForm.phoneNumber} - ${withdrawalForm.address}${withdrawalForm.note ? ' - Catatan: ' + withdrawalForm.note : ''}`,
         person: withdrawalForm.doctorName,
         withdrawal_data: withdrawalForm
