@@ -1,6 +1,6 @@
 import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,6 +10,40 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const meRes = await fetch(
+            `https://sadar-be.simogas.online/api/auth/me?token=${token}`,
+            { method: "POST" }
+          );
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            if (meData.role) {
+              const role = meData.role;
+              if (role === "super_admin") {
+                navigate("/superadmin");
+                return;
+              } else if (role === "admin_faskes") {
+                navigate("/");
+                return;
+              }
+            }
+          }
+          localStorage.removeItem("token");
+        } catch (err) {
+          console.error("Token verification failed:", err);
+          localStorage.removeItem("token");
+        }
+      }
+      setIsVerifying(false);
+    };
+    checkAuth();
+  }, [navigate]);
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -22,7 +56,7 @@ export default function Login() {
     }
 
     try {
-      const response = await fetch("http://192.168.108.79:8000/api/auth/login", {
+      const response = await fetch("https://sadar-be.simogas.online/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -33,7 +67,7 @@ export default function Login() {
       if (response.ok && data.access_token) {
         localStorage.setItem("token", data.access_token);
         const meRes = await fetch(
-          `http://192.168.108.79:8000/api/auth/me?token=${data.access_token}`,
+          `https://sadar-be.simogas.online/api/auth/me?token=${data.access_token}`,
           { method: "POST" }
         );
         const meData = await meRes.json();
@@ -64,6 +98,14 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="animate-spin text-red-500" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div

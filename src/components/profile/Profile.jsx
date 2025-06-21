@@ -20,7 +20,7 @@ export default function Profile() {
           throw new Error("Token tidak ditemukan, silakan login ulang.");
 
         const akunRes = await fetch(
-          `http://192.168.108.79:8000/api/auth/me?token=${token}`,
+          `https://sadar-be.simogas.online/api/auth/me?token=${token}`,
           {
             method: "POST",
           }
@@ -38,9 +38,13 @@ export default function Profile() {
         const faskesId = akunData.faskes_id || akunData.faskes?.id;
         if (faskesId) {
           const faskesRes = await fetch(
-            `http://192.168.108.79:8000/api/faskes/${faskesId}?token=${token}`,
+            `https://sadar-be.simogas.online/api/faskes/${faskesId}`,
             {
-              method: "POST",
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
+              },
             }
           );
           const faskesContentType = faskesRes.headers.get("content-type");
@@ -53,8 +57,8 @@ export default function Profile() {
             throw new Error("Respon faskes bukan JSON: " + text.slice(0, 100));
           }
           const faskesData = await faskesRes.json();
-          setFaskes(faskesData);
-          setFormFaskes(faskesData);
+          setFaskes(faskesData.data);
+          setFormFaskes(faskesData.data);
         }
       } catch (err) {
         alert(err.message);
@@ -68,10 +72,28 @@ export default function Profile() {
     setFormFaskes({ ...formFaskes, [e.target.name]: e.target.value });
   };
   const handleEditFaskes = () => setEditFaskes(true);
-  const handleSaveFaskes = () => {
-    setFaskes(formFaskes);
-    setEditFaskes(false);
-    // TODO: Kirim PATCH/PUT ke API
+  const handleSaveFaskes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `https://sadar-be.simogas.online/api/faskes/${faskes.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formFaskes),
+        }
+      );
+      if (!res.ok) throw new Error("Gagal menyimpan data faskes.");
+      const updatedFaskes = await res.json();
+      setFaskes(updatedFaskes.data);
+      setEditFaskes(false);
+      alert("Data faskes berhasil diperbarui!");
+    } catch (err) {
+      alert(err.message);
+    }
   };
   const handleCancelFaskes = () => {
     setFormFaskes(faskes);
@@ -82,10 +104,41 @@ export default function Profile() {
     setFormAkun({ ...formAkun, [e.target.name]: e.target.value });
   };
   const handleEditAkun = () => setEditAkun(true);
-  const handleSaveAkun = () => {
-    setAkun(formAkun);
-    setEditAkun(false);
-    // TODO: Kirim PATCH/PUT ke API
+  const handleSaveAkun = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      Object.keys(formAkun).forEach((key) => {
+        formData.append(key, formAkun[key]);
+      });
+      // Jika ada field password kosong, hapus dari data yang dikirim
+      if (!formAkun.password) {
+        formData.delete("password");
+      }
+
+      const res = await fetch(
+        `https://sadar-be.simogas.online/api/auth/update`,
+        {
+          method: "POST", // Menggunakan POST untuk mengakomodasi file upload
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Gagal menyimpan data akun.");
+      }
+      
+      const updatedAkun = await res.json();
+      setAkun(updatedAkun.data);
+      setEditAkun(false);
+      alert("Data akun berhasil diperbarui!");
+    } catch (err) {
+      alert(err.message);
+    }
   };
   const handleCancelAkun = () => {
     setFormAkun(akun);

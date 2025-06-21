@@ -1,4 +1,4 @@
-import { Activity, Building2, Heart, Hospital } from "lucide-react";
+import { Activity, Building2, Heart, Hospital, LogOut } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,7 +21,7 @@ export default function SuperAdmin() {
     nomor_whatsapp: "",
   });
 
-  const API_BASE = "http://192.168.108.79:8000/api";
+  const API_BASE = "https://sadar-be.simogas.online/api";
 
   const handleChange = (e) => {
     setForm({
@@ -34,9 +34,48 @@ export default function SuperAdmin() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    
+    // Validasi data sebelum dikirim
+    if (!form.nama || !form.jenis_layanan || !form.alamat || !form.latitude || !form.longitude) {
+      setError("Semua field faskes harus diisi!");
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.email || !form.name || !form.password || !form.nomor_whatsapp) {
+      setError("Semua field akun harus diisi!");
+      setLoading(false);
+      return;
+    }
+    
+    // Validasi format nomor WhatsApp
+    const whatsappRegex = /^(\+62|62|0)8[1-9][0-9]{6,12}$/;
+    console.log("Validasi nomor WhatsApp:", form.nomor_whatsapp, "Result:", whatsappRegex.test(form.nomor_whatsapp));
+    if (!whatsappRegex.test(form.nomor_whatsapp)) {
+      setError("Format nomor WhatsApp tidak valid! Gunakan format: 08xxxxxxxxxx (minimal 10 digit, maksimal 15 digit)");
+      setLoading(false);
+      return;
+    }
+    
+    // Validasi password minimal 6 karakter
+    if (form.password.length < 6) {
+      setError("Password minimal 6 karakter!");
+      setLoading(false);
+      return;
+    }
+    
     try {
       // ada 2 post dsni
       // ada post faskes dsni
+      console.log("Mengirim data faskes:", {
+        nama: form.nama,
+        jenis_layanan: form.jenis_layanan,
+        alamat: form.alamat,
+        about: form.about,
+        latitude: form.latitude,
+        longitude: form.longitude,
+      });
+      
       const resFaskes = await fetch(`${API_BASE}/faskes`, {
         method: "POST",
         headers: {
@@ -52,12 +91,17 @@ export default function SuperAdmin() {
           longitude: form.longitude,
         }),
       });
+      
+      console.log("Response status faskes:", resFaskes.status);
+      console.log("Response headers faskes:", Object.fromEntries(resFaskes.headers.entries()));
+      
       const contentTypeFaskes = resFaskes.headers.get("content-type");
       if (!resFaskes.ok) {
         const errorText =
           contentTypeFaskes && contentTypeFaskes.includes("application/json")
             ? await resFaskes.json()
             : await resFaskes.text();
+        console.log("Error response faskes:", errorText);
         throw new Error(
           typeof errorText === "string"
             ? errorText
@@ -70,19 +114,65 @@ export default function SuperAdmin() {
       console.log("Faskes ID:", faskesId);
       if (!faskesId) throw new Error("ID faskes tidak ditemukan!");
 
+      // Pastikan faskes_id adalah number
+      const faskesIdNumber = parseInt(faskesId);
+      if (isNaN(faskesIdNumber)) {
+        throw new Error("ID faskes tidak valid!");
+      }
+
       // ada post akun dsni
       const formData = new FormData();
       formData.append("name", form.name);
       formData.append("email", form.email);
       formData.append("password", form.password);
       formData.append("nomor_whatsapp", form.nomor_whatsapp);
-      formData.append("faskes_id", faskesId);
+      formData.append("faskes_id", faskesIdNumber);
       formData.append("role", "admin_faskes");
 
-      const resAkun = await fetch(`${API_BASE}/auth/register`, {
+      console.log("Mengirim data akun:", {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        nomor_whatsapp: form.nomor_whatsapp,
+        faskes_id: faskesIdNumber,
+        role: "admin_faskes"
+      });
+
+      // Log FormData contents
+      console.log("FormData contents:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+
+      // Coba dengan FormData terlebih dahulu
+      let resAkun = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         body: formData,
       });
+      
+      // Jika gagal, coba dengan JSON format
+      if (!resAkun.ok) {
+        console.log("FormData gagal, mencoba dengan JSON format...");
+        resAkun = await fetch(`${API_BASE}/auth/register`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            name: form.name,
+            email: form.email,
+            password: form.password,
+            nomor_whatsapp: form.nomor_whatsapp,
+            faskes_id: faskesIdNumber,
+            role: "admin_faskes"
+          }),
+        });
+      }
+      
+      console.log("Response status akun:", resAkun.status);
+      console.log("Response headers akun:", Object.fromEntries(resAkun.headers.entries()));
+      
       const contentTypeAkun = resAkun.headers.get("content-type");
       let dataAkun;
       if (contentTypeAkun && contentTypeAkun.includes("application/json")) {
@@ -90,12 +180,32 @@ export default function SuperAdmin() {
       } else {
         dataAkun = await resAkun.text();
       }
+      
+      console.log("Response data akun:", dataAkun);
+      
       if (!resAkun.ok) {
+        console.log("Error response akun - Status:", resAkun.status);
+        console.log("Error response akun - Headers:", Object.fromEntries(resAkun.headers.entries()));
+        console.log("Error response akun - Data:", dataAkun);
+        
+        // Check for unique constraint violation from Laravel
+        if (dataAkun && typeof dataAkun.message === 'string' && dataAkun.message.includes('SQLSTATE[23000]')) {
+             throw new Error("Email atau Nomor WhatsApp sudah terdaftar. Silakan gunakan yang lain.");
+        }
+        
         if (typeof dataAkun === "string" && dataAkun.includes("Duplicate entry")) {
           throw new Error("Nomor WhatsApp sudah terdaftar.");
         }
-        throw new Error(typeof dataAkun === "string" ? dataAkun : JSON.stringify(dataAkun));
+        throw new Error(`Error ${resAkun.status}: ${typeof dataAkun === "string" ? dataAkun : JSON.stringify(dataAkun)}`);
       }
+
+      // Pastikan response menunjukkan success
+      if (dataAkun && dataAkun.success === false) {
+        console.log("Response menunjukkan success: false");
+        throw new Error(dataAkun.message || "Gagal mendaftarkan akun");
+      }
+
+      console.log("Akun berhasil didaftarkan:", dataAkun);
 
       alert("Faskes dan akun berhasil ditambahkan!");
       setForm({
@@ -117,6 +227,11 @@ export default function SuperAdmin() {
     setLoading(false);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   const handleSelectType = (type) => {
     setSelectedType(type);
     setError("");
@@ -124,7 +239,14 @@ export default function SuperAdmin() {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-4xl relative">
+        <button
+          onClick={handleLogout}
+          className="absolute top-4 right-4 flex items-center gap-2 bg-[#E30030] text-white px-4 py-2 rounded-lg hover:bg-[#b80024] transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Logout</span>
+        </button>
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-[#1F1F1F] mb-4">SADAR</h1>
           <p className="text-[#80808A] text-xl mb-8">Sistem Akses Darurat</p>

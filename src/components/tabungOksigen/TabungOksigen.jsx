@@ -1,6 +1,5 @@
-import { Calendar, Droplets, Minus, Plus, User, X } from "lucide-react";
-import React, { useState } from "react";
-import { dummyData } from "../dummy/data";
+import { Calendar, Droplets, Minus, Plus, User, X, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
 export default function TabungOksigen() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -8,8 +7,96 @@ export default function TabungOksigen() {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [personName, setPersonName] = useState("");
+  const [stockData, setStockData] = useState([]);
+  const [logData, setLogData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const oksigen = dummyData.tabungOksigen;
+  const API_BASE = "https://sadar-be.simogas.online/api";
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const [stockRes, logRes] = await Promise.all([
+        fetch(`${API_BASE}/infostok`, { headers }),
+        fetch(`${API_BASE}/log?tipe_item=oksigen`, { headers })
+      ]);
+
+      if (!stockRes.ok || !logRes.ok) {
+        throw new Error("Gagal mengambil data dari server.");
+      }
+
+      const stockJson = await stockRes.json();
+      const logJson = await logRes.json();
+
+      setStockData(stockJson.stok_oksigen || []);
+      setLogData(logJson.data || []);
+    } catch (error) {
+      console.error("Gagal mengambil data:", error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+  
+  const resetForm = () => {
+    setAmount("");
+    setNote("");
+    setPersonName("");
+  };
+
+  const handleTransaction = async (type) => {
+    if (!amount || !personName) {
+      alert("Jumlah dan nama petugas harus diisi.");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/transaksi`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          item: "oksigen",
+          type: type,
+          amount: parseInt(amount),
+          note: note,
+          person: personName,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || `Gagal ${type === 'in' ? 'menambah' : 'mengambil'} stok.`);
+      }
+
+      alert(`Stok berhasil ${type === 'in' ? 'ditambahkan' : 'diambil'}!`);
+      resetForm();
+      setShowAddModal(false);
+      setShowRemoveModal(false);
+      fetchData();
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+  
+  const totalStock = stockData.reduce((sum, item) => sum + parseInt(item.total, 10), 0);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="animate-spin text-red-500" size={40} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -24,21 +111,21 @@ export default function TabungOksigen() {
             <div>
               <p className="text-[#80808A] text-lg font-semibold">Total Stok</p>
               <h3 className="text-5xl font-extrabold text-[#1F1F1F] tracking-tight">
-                {oksigen.total}
+                {totalStock}
               </h3>
               <p className="text-[#80808A] text-base">Tabung</p>
             </div>
           </div>
           <div className="flex flex-col gap-4 w-full md:w-auto">
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => { resetForm(); setShowAddModal(true); }}
               className="flex items-center justify-center space-x-2 bg-[#E30030] text-[#FFFFFF] p-4 rounded-xl hover:bg-opacity-90 transition-colors font-semibold shadow"
             >
               <Plus className="w-5 h-5" />
               <span>Tambah Stok</span>
             </button>
             <button
-              onClick={() => setShowRemoveModal(true)}
+              onClick={() => { resetForm(); setShowRemoveModal(true); }}
               className="flex items-center justify-center space-x-2 bg-[#1F1F1F] text-[#FFFFFF] p-4 rounded-xl hover:bg-opacity-90 transition-colors font-semibold shadow"
             >
               <Minus className="w-5 h-5" />
@@ -52,14 +139,14 @@ export default function TabungOksigen() {
             <h2 className="text-2xl font-bold text-[#1F1F1F]">Log Tabung Oksigen</h2>
             <div className="bg-[#E30030]/10 px-6 py-2 rounded-lg">
               <span className="text-[#E30030] font-semibold">
-                Stok: {oksigen.total} Tabung
+                Stok: {totalStock} Tabung
               </span>
             </div>
           </div>
           <div className="divide-y divide-[#80808A]/10">
-            {oksigen.logs.map((log, idx) => (
+            {logData.map((log) => (
               <div
-                key={idx}
+                key={log.id}
                 className="flex items-start justify-between py-6"
               >
                 <div className="flex items-center space-x-4">
@@ -81,7 +168,7 @@ export default function TabungOksigen() {
                     </p>
                     <div className="flex items-center text-[#80808A] text-xs mt-1">
                       <Calendar className="w-4 h-4 mr-1" />
-                      <span>{log.date}</span>
+                      <span>{new Date(log.created_at).toLocaleString()}</span>
                     </div>
                     <div className="flex items-center text-[#80808A] text-xs">
                       <User className="w-4 h-4 mr-1" />
@@ -167,6 +254,7 @@ export default function TabungOksigen() {
 
               <div className="flex space-x-3 mt-6">
                 <button
+                  onClick={() => handleTransaction('in')}
                   className="flex-1 bg-[#E30030] text-[#FFFFFF] py-2 rounded-lg hover:bg-opacity-90 transition-colors"
                 >
                   Tambah Stok
@@ -241,6 +329,7 @@ export default function TabungOksigen() {
 
               <div className="flex space-x-3 mt-6">
                 <button
+                  onClick={() => handleTransaction('out')}
                   className="flex-1 bg-[#E30030] text-[#FFFFFF] py-2 rounded-lg hover:bg-opacity-90 transition-colors"
                 >
                   Ambil Stok

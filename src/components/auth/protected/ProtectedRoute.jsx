@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       }
       try {
         const res = await fetch(
-          `http://192.168.108.79:8000/api/auth/me?token=${token}`,
+          `https://sadar-be.simogas.online/api/auth/me?token=${token}`,
           { method: "POST" }
         );
         const data = await res.json();
