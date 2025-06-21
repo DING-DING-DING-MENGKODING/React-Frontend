@@ -9,6 +9,20 @@ export default function KantongDarah() {
   const [personName, setPersonName] = useState("");
   const [selectedBloodType, setSelectedBloodType] = useState("");
   
+  // State untuk form pengambilan yang lebih lengkap
+  const [withdrawalForm, setWithdrawalForm] = useState({
+    patientName: "",
+    patientId: "",
+    doctorName: "",
+    department: "",
+    diagnosis: "",
+    urgency: "normal", // normal, urgent, emergency
+    prescriptionNumber: "",
+    phoneNumber: "",
+    address: "",
+    note: ""
+  });
+  
   const [stockData, setStockData] = useState([]);
   const [logData, setLogData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,29 +66,61 @@ export default function KantongDarah() {
     setNote("");
     setPersonName("");
     setSelectedBloodType("");
+    setWithdrawalForm({
+      patientName: "",
+      patientId: "",
+      doctorName: "",
+      department: "",
+      diagnosis: "",
+      urgency: "normal",
+      prescriptionNumber: "",
+      phoneNumber: "",
+      address: "",
+      note: ""
+    });
   };
 
   const handleTransaction = async (type) => {
-    if (!amount || !personName || !selectedBloodType) {
-      alert("Jenis darah, jumlah, dan nama petugas harus diisi.");
-      return;
+    if (type === 'in') {
+      // Untuk penambahan stok
+      if (!amount || !personName || !selectedBloodType) {
+        alert("Jenis darah, jumlah, dan nama petugas harus diisi.");
+        return;
+      }
+    } else {
+      // Untuk pengambilan stok
+      if (!withdrawalForm.patientName || !withdrawalForm.doctorName || !withdrawalForm.department || !selectedBloodType) {
+        alert("Nama pasien, dokter, departemen, dan jenis darah harus diisi.");
+        return;
+      }
     }
+    
     try {
       const token = localStorage.getItem("token");
+      const requestBody = type === 'in' ? {
+        item: "darah",
+        jenis: selectedBloodType,
+        type: type,
+        amount: parseInt(amount),
+        note: note,
+        person: personName,
+      } : {
+        item: "darah",
+        jenis: selectedBloodType,
+        type: type,
+        amount: 1, // Otomatis 1 kantong
+        note: `Pengambilan untuk pasien: ${withdrawalForm.patientName} (${withdrawalForm.patientId}) - Dr. ${withdrawalForm.doctorName} - ${withdrawalForm.department} - ${withdrawalForm.diagnosis} - ${withdrawalForm.urgency} - ${withdrawalForm.prescriptionNumber} - ${withdrawalForm.phoneNumber} - ${withdrawalForm.address}${withdrawalForm.note ? ' - Catatan: ' + withdrawalForm.note : ''}`,
+        person: withdrawalForm.doctorName,
+        withdrawal_data: withdrawalForm
+      };
+      
       const res = await fetch(`${API_BASE}/transaksi`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          item: "darah",
-          jenis: selectedBloodType,
-          type: type,
-          amount: parseInt(amount),
-          note: note,
-          person: personName,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
@@ -296,9 +342,9 @@ export default function KantongDarah() {
 
         {showRemoveModal && (
           <div className="fixed inset-0 bg-[#1F1F1F]/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#FFFFFF] rounded-xl p-6 w-full max-w-md">
+            <div className="bg-[#FFFFFF] rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-[#1F1F1F]">Ambil Stok</h3>
+                <h3 className="text-xl font-bold text-[#1F1F1F]">Form Pengambilan Kantong Darah</h3>
                 <button
                   onClick={() => setShowRemoveModal(false)}
                   className="text-[#80808A] hover:text-[#1F1F1F]"
@@ -306,7 +352,191 @@ export default function KantongDarah() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <ModalForm onCancel={() => setShowRemoveModal(false)} onSubmit={() => handleTransaction('out')} />
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#80808A] mb-2">
+                    Jenis Darah <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedBloodType}
+                    onChange={(e) => setSelectedBloodType(e.target.value)}
+                    className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                  >
+                    <option value="" disabled>Pilih jenis darah</option>
+                    {stockData.map(item => (
+                      <option key={item.jenis_darah} value={item.jenis_darah}>{item.jenis_darah}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      Nama Pasien <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={withdrawalForm.patientName}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, patientName: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                      placeholder="Nama lengkap pasien"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      ID Pasien
+                    </label>
+                    <input
+                      type="text"
+                      value={withdrawalForm.patientId}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, patientId: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                      placeholder="Nomor ID pasien"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      Nama Dokter <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={withdrawalForm.doctorName}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, doctorName: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                      placeholder="Nama dokter penanggung jawab"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      Departemen <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={withdrawalForm.department}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, department: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                    >
+                      <option value="" disabled>Pilih departemen</option>
+                      <option value="IGD">IGD</option>
+                      <option value="ICU">ICU</option>
+                      <option value="Bedah">Bedah</option>
+                      <option value="Poli Dalam">Poli Dalam</option>
+                      <option value="Poli Anak">Poli Anak</option>
+                      <option value="Poli Bedah">Poli Bedah</option>
+                      <option value="Poli Jantung">Poli Jantung</option>
+                      <option value="Poli Saraf">Poli Saraf</option>
+                      <option value="Poli Kebidanan">Poli Kebidanan</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#80808A] mb-2">
+                    Diagnosis
+                  </label>
+                  <input
+                    type="text"
+                    value={withdrawalForm.diagnosis}
+                    onChange={(e) => setWithdrawalForm({...withdrawalForm, diagnosis: e.target.value})}
+                    className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                    placeholder="Diagnosis pasien"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      Tingkat Urgensi
+                    </label>
+                    <select
+                      value={withdrawalForm.urgency}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, urgency: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="emergency">Emergency</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      Nomor Resep
+                    </label>
+                    <input
+                      type="text"
+                      value={withdrawalForm.prescriptionNumber}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, prescriptionNumber: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                      placeholder="Nomor resep dokter"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      Nomor Telepon
+                    </label>
+                    <input
+                      type="tel"
+                      value={withdrawalForm.phoneNumber}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, phoneNumber: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                      placeholder="Nomor telepon kontak"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#80808A] mb-2">
+                      Alamat
+                    </label>
+                    <input
+                      type="text"
+                      value={withdrawalForm.address}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, address: e.target.value})}
+                      className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                      placeholder="Alamat pasien"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#80808A] mb-2">
+                    Catatan Tambahan
+                  </label>
+                  <textarea
+                    value={withdrawalForm.note}
+                    onChange={(e) => setWithdrawalForm({...withdrawalForm, note: e.target.value})}
+                    className="w-full p-3 border border-[#80808A]/20 rounded-lg focus:border-[#E30030] focus:ring-1 focus:ring-[#E30030]"
+                    rows="3"
+                    placeholder="Catatan tambahan (opsional)"
+                  />
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Informasi:</strong> Setelah form disubmit, stok akan otomatis berkurang sebanyak <strong>1 kantong darah</strong>.
+                  </p>
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <button 
+                    onClick={() => handleTransaction('out')} 
+                    className="flex-1 bg-[#E30030] text-[#FFFFFF] py-3 rounded-lg hover:bg-opacity-90 transition-colors font-semibold"
+                  >
+                    Ambil Stok (1 Kantong)
+                  </button>
+                  <button 
+                    onClick={() => setShowRemoveModal(false)} 
+                    className="flex-1 bg-[#80808A] text-[#FFFFFF] py-3 rounded-lg hover:bg-opacity-90 transition-colors"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

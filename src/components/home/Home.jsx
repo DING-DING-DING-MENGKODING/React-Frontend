@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Car,
@@ -9,20 +9,51 @@ import {
   MapPin,
   Clock,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
 import { dummyData } from "../dummy/data";
 
 const HomeScreen = () => {
   const navigate = useNavigate();
   const ambulanceCount = dummyData.ambulance.length;
-  const darahCount = dummyData.kantongDarah.total;
-  const oksigenCount = dummyData.tabungOksigen.total;
-
+  
   const [ambulanceOrders, setAmbulanceOrders] = useState(dummyData.ambulanceOrders);
   const [ambulances] = useState(dummyData.ambulance);
+  const [stockData, setStockData] = useState({ darah: 0, oksigen: 0 });
+  const [loading, setLoading] = useState(true);
 
   const [showAmbulanceModal, setShowAmbulanceModal] = useState(false);
   const [selectedAmbulanceOrder, setSelectedAmbulanceOrder] = useState(null);
+
+  const API_BASE = "https://sadar-be.simogas.online/api";
+
+  const fetchStockData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const res = await fetch(`${API_BASE}/infostok`, { headers });
+      if (!res.ok) {
+        throw new Error("Gagal mengambil data stok.");
+      }
+      
+      const data = await res.json();
+      const darahTotal = (data.stok_darah || []).reduce((sum, item) => sum + parseInt(item.total, 10), 0);
+      const oksigenTotal = (data.stok_oksigen || []).reduce((sum, item) => sum + parseInt(item.total, 10), 0);
+      
+      setStockData({ darah: darahTotal, oksigen: oksigenTotal });
+    } catch (error) {
+      console.error("Gagal mengambil data stok:", error);
+      // Fallback ke data dummy jika API gagal
+      setStockData({ darah: dummyData.kantongDarah.total, oksigen: dummyData.tabungOksigen.total });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStockData();
+  }, []);
 
   const stats = [
     {
@@ -33,13 +64,13 @@ const HomeScreen = () => {
     },
     {
       title: "Kantung Darah Tersalurkan",
-      value: darahCount,
+      value: loading ? <Loader2 className="animate-spin w-6 h-6" /> : stockData.darah,
       icon: Droplet,
       color: "from-red-500 to-red-600",
     },
     {
       title: "Tabung Oksigen Tersalurkan",
-      value: oksigenCount,
+      value: loading ? <Loader2 className="animate-spin w-6 h-6" /> : stockData.oksigen,
       icon: Wind,
       color: "from-green-500 to-green-600",
     },
